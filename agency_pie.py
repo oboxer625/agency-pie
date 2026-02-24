@@ -1,0 +1,441 @@
+import math
+from io import StringIO
+
+import pandas as pd
+import streamlit as st
+import plotly.graph_objects as go
+
+# -----------------------------
+# Page setup
+# -----------------------------
+st.set_page_config(page_title="Agency Pie Generator", layout="wide")
+st.title("Agency Framework – Pie-with-Depth Generator")
+st.caption("Local tool. Avoid putting any identifying client information in here.")
+
+# -----------------------------
+# Inputs
+# -----------------------------
+INPUT_DOMAINS = [
+    "Reasoning", "Reading", "Math", "Writing",
+    "Attention", "Planning", "Language",
+    "Coordination", "Connection", "Flexibility"
+]
+
+MAIN_DOMAINS = [
+    "Reasoning",
+    "Academics",
+    "Attention",
+    "Planning",
+    "Language",
+    "Coordination",
+    "Connection",
+    "Flexibility",
+]
+
+ACADEMIC_SUBS = ["Math", "Writing", "Reading"]
+ACADEMIC_SUB_ABBR = {"Math": "M", "Writing": "W", "Reading": "R"}
+
+MAX_SCORE = 100
+LABEL_RADIUS_FACTOR = 1.10
+PLOT_MAX = int(MAX_SCORE * 1.18)
+
+# Make the chart physically large (key for parent feedbacks + fullscreen readability)
+CHART_HEIGHT = 900
+
+# -----------------------------
+# Color themes
+# -----------------------------
+THEMES = {
+    "Original": {
+        "Reasoning": "#4C78A8",
+        "Reading": "#F58518",
+        "Math": "#54A24B",
+        "Writing": "#B279A2",
+        "Attention": "#E45756",
+        "Planning": "#72B7B2",
+        "Language": "#FF9DA6",
+        "Coordination": "#9D755D",
+        "Connection": "#BAB0AC",
+        "Flexibility": "#59A14F",
+        "Academics": "#F58518",
+    },
+    "Muted Clinical": {
+        "Reasoning": "#5B7C99",
+        "Reading": "#D8A47F",
+        "Math": "#6A9F58",
+        "Writing": "#8C6FA8",
+        "Attention": "#C25A5A",
+        "Planning": "#5F9EA0",
+        "Language": "#E8A0A8",
+        "Coordination": "#8D6E63",
+        "Connection": "#9E9E9E",
+        "Flexibility": "#7DA453",
+        "Academics": "#D8A47F",
+    },
+    "High Contrast": {
+        "Reasoning": "#1F77B4",
+        "Reading": "#FF7F0E",
+        "Math": "#2CA02C",
+        "Writing": "#9467BD",
+        "Attention": "#D62728",
+        "Planning": "#17BECF",
+        "Language": "#FF69B4",
+        "Coordination": "#8C564B",
+        "Connection": "#7F7F7F",
+        "Flexibility": "#32CD32",
+        "Academics": "#FF7F0E",
+    },
+}
+
+# -----------------------------
+# Sidebar controls
+# -----------------------------
+st.sidebar.header("Enter scores (0–100)")
+theme_choice = st.sidebar.selectbox("Color Theme", list(THEMES.keys()))
+COLOR_MAP = THEMES[theme_choice]
+
+mode = st.sidebar.radio("Input method", ["Type values", "Paste CSV"])
+
+values: list[int] = []
+
+if mode == "Type values":
+    for d in INPUT_DOMAINS:
+        v = st.sidebar.number_input(d, min_value=0, max_value=100, value=50, step=1)
+        values.append(int(v))
+else:
+    st.sidebar.write("Paste two-column CSV here (domain,value) OR just values in domain order.")
+    sample = (
+        "domain,value\n"
+        "Reasoning,100\nReading,60\nMath,100\nWriting,90\nAttention,25\nPlanning,25\n"
+        "Language,100\nCoordination,100\nConnection,100\nFlexibility,50\n"
+    )
+    text = st.sidebar.text_area("Paste data", value=sample, height=220)
+
+    try:
+        df_in = pd.read_csv(StringIO(text))
+        if "domain" not in df_in.columns or "value" not in df_in.columns:
+            raise ValueError("CSV must have columns: domain,value")
+
+        df_in["domain"] = df_in["domain"].astype(str)
+        df_in["value"] = pd.to_numeric(df_in["value"], errors="coerce").fillna(0).astype(int)
+
+        lookup_in = dict(zip(df_in["domain"], df_in["value"]))
+        values = [int(lookup_in.get(d, 0)) for d in INPUT_DOMAINS]
+
+    except Exception:
+        lines = [x.strip() for x in text.splitlines() if x.strip()]
+        nums: list[int] = []
+        for ln in lines:
+            try:
+                nums.append(int(float(ln)))
+            except Exception:
+                pass
+        values = (nums + [0] * len(INPUT_DOMAINS))[: len(INPUT_DOMAINS)]
+
+df_input = pd.DataFrame({"domain": INPUT_DOMAINS, "value": values})
+lookup = dict(zip(df_input["domain"], df_input["value"]))
+
+st.subheader("Preview data")
+st.dataframe(df_input, width="stretch")
+
+# -----------------------------
+# Helpers
+# -----------------------------
+def clamp_int(x) -> int:
+    try:
+        v = int(float(x))
+    except Exception:
+        v = 0
+    return max(0, min(MAX_SCORE, v))
+
+def normalize_deg(deg: float) -> float:
+    return float(deg % 360)
+
+def boundary_lines(
+    n: int,
+    rotation_deg: float,
+    max_r: int = MAX_SCORE,
+    color: str = "rgba(0,0,0,0.12)",
+    width: int = 1,
+) -> list[dict]:
+    lines = []
+    rot = math.radians(rotation_deg)
+    for k in range(n):
+        theta = rot - (2 * math.pi * (k / n))  # clockwise
+        x = max_r * math.cos(theta)
+        y = max_r * math.sin(theta)
+        lines.append(
+            dict(
+                type="line",
+                x0=0, y0=0,
+                x1=x, y1=y,
+                xref="x", yref="y",
+                line=dict(color=color, width=width),
+                layer="below",
+            )
+        )
+    return lines
+
+def main_wedge_geometry(n_main: int):
+    w_main = 360 / n_main
+    rotation_deg = 90 - (180 / n_main)
+    return w_main, rotation_deg
+
+def common_layout(n_main: int) -> dict:
+    half_slice = 180 / n_main
+    rotation_deg = 90 - half_slice
+
+    return dict(
+        template="plotly_white",
+        showlegend=False,
+        height=CHART_HEIGHT,
+        polar=dict(
+            radialaxis=dict(
+                range=[0, PLOT_MAX],
+                showticklabels=False,
+                ticks="",
+                gridcolor="rgba(0,0,0,0.08)",
+            ),
+            angularaxis=dict(
+                rotation=rotation_deg,
+                direction="clockwise",
+                showgrid=False,
+                showticklabels=False,
+            ),
+        ),
+        xaxis=dict(visible=False, range=[-PLOT_MAX, PLOT_MAX]),
+        yaxis=dict(visible=False, range=[-PLOT_MAX, PLOT_MAX], scaleanchor="x", scaleratio=1),
+        shapes=boundary_lines(n_main, rotation_deg=rotation_deg, max_r=MAX_SCORE),
+        # generous margins so labels never get clipped
+        margin=dict(l=160, r=160, t=120, b=160),
+    )
+
+def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
+    w_main, rotation_deg = main_wedge_geometry(n_main)
+    centers = [normalize_deg(rotation_deg - (k + 0.5) * w_main) for k in range(n_main)]
+    r_label = MAX_SCORE * LABEL_RADIUS_FACTOR
+
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[r_label] * n_main,
+            theta=centers,
+            mode="text",
+            text=labels,
+            textfont=dict(size=20, color="rgba(70,70,90,0.92)"),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+
+def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
+    w_main, rotation_deg = main_wedge_geometry(n_main)
+    acad_k = MAIN_DOMAINS.index("Academics")
+
+    acad_edge_start = rotation_deg - acad_k * w_main
+    w_mini = w_main / 3
+
+    thetas = []
+    texts = []
+    for j, sub in enumerate(ACADEMIC_SUBS):
+        theta_center = normalize_deg(acad_edge_start - (j + 0.5) * w_mini)
+        thetas.append(theta_center)
+        texts.append(ACADEMIC_SUB_ABBR.get(sub, sub[:1].upper()))
+
+    r_sub = min(MAX_SCORE * 1.04, PLOT_MAX * 0.98)
+
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[r_sub] * len(thetas),
+            theta=thetas,
+            mode="text",
+            text=texts,
+            textfont=dict(size=18, color="rgba(50,50,60,0.90)"),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+
+# -----------------------------
+# Trace builder
+# -----------------------------
+def build_traces(reveal_main_count: int) -> list:
+    """
+    reveal_main_count = number of MAIN_DOMAINS revealed (0..len(MAIN_DOMAINS))
+    Academics counts as ONE reveal step (when it reveals, all 3 sub-slices appear).
+    """
+    n_main = len(MAIN_DOMAINS)
+    w_main, rotation_deg = main_wedge_geometry(n_main)
+
+    revealed = set(range(max(0, min(n_main, reveal_main_count))))
+
+    traces = []
+
+    # regular main wedges
+    for k, name in enumerate(MAIN_DOMAINS):
+        if name == "Academics":
+            continue
+
+        val = clamp_int(lookup.get(name, 0))
+        if k not in revealed:
+            val = 0
+
+        theta_center = normalize_deg(rotation_deg - (k + 0.5) * w_main)
+
+        traces.append(
+            go.Barpolar(
+                r=[val],
+                theta=[theta_center],
+                width=[w_main * 0.98],
+                marker=dict(color=COLOR_MAP.get(name, "#4C78A8"), line=dict(color="white", width=1)),
+                opacity=0.95,
+                hovertemplate=f"{name}: {val}<extra></extra>",
+            )
+        )
+
+    # Academics: subdivided inside ONE main wedge
+    acad_k = MAIN_DOMAINS.index("Academics")
+    acad_revealed = acad_k in revealed
+
+    acad_edge_start = rotation_deg - acad_k * w_main
+    w_mini = w_main / 3
+
+    for j, sub in enumerate(ACADEMIC_SUBS):
+        val = clamp_int(lookup.get(sub, 0))
+        if not acad_revealed:
+            val = 0
+
+        theta_center = normalize_deg(acad_edge_start - (j + 0.5) * w_mini)
+
+        traces.append(
+            go.Barpolar(
+                r=[val],
+                theta=[theta_center],
+                width=[w_mini * 0.95],
+                marker=dict(color=COLOR_MAP.get(sub, "#999999"), line=dict(color="white", width=1)),
+                opacity=0.95,
+                hovertemplate=f"Academics – {sub}: {val}<extra></extra>",
+            )
+        )
+
+    return traces
+
+# -----------------------------
+# Client-side Stepper Figure (works in fullscreen modal)
+# -----------------------------
+def make_client_stepper_fig(initial_step: int) -> go.Figure:
+    """
+    Builds ALL steps as separate groups of traces, then uses a Plotly slider
+    (method='update') to toggle which group's traces are visible.
+    This works reliably in Streamlit's fullscreen chart modal.
+    """
+    n_main = len(MAIN_DOMAINS)
+
+    # Build bar traces for each step
+    per_step_traces: list[list[go.BaseTraceType]] = []
+    for step in range(n_main + 1):
+        per_step_traces.append(build_traces(step))
+
+    # Flatten bar traces
+    flat_bars = []
+    step_sizes = []
+    for traces in per_step_traces:
+        step_sizes.append(len(traces))
+        flat_bars.extend(traces)
+
+    fig = go.Figure(data=flat_bars)
+    fig.update_layout(**common_layout(n_main))
+
+    # Add labels ONCE at the end (always visible)
+    add_labels(fig, MAIN_DOMAINS, n_main)
+    add_academics_sub_labels(fig, n_main)
+
+    total_bar_traces = len(flat_bars)
+    label_trace_count = 2  # we add two Scatterpolar traces above
+
+    # Precompute start indices for each step
+    starts = []
+    idx = 0
+    for sz in step_sizes:
+        starts.append(idx)
+        idx += sz
+
+    def visibility_for(step: int) -> list[bool]:
+        vis = [False] * total_bar_traces
+        start = starts[step]
+        end = start + step_sizes[step]
+        for i in range(start, end):
+            vis[i] = True
+        # labels always visible (last two traces)
+        vis += [True] * label_trace_count
+        return vis
+
+    # Apply initial visibility
+    initial_step = max(0, min(n_main, int(initial_step)))
+    vis0 = visibility_for(initial_step)
+    for i, v in enumerate(vis0):
+        fig.data[i].visible = v
+
+    # Slider labels
+    step_labels = ["Start"] + MAIN_DOMAINS[:]
+
+    slider_steps = []
+    for step in range(n_main + 1):
+        slider_steps.append(
+            dict(
+                method="update",
+                args=[{"visible": visibility_for(step)}],
+                label=step_labels[step],
+            )
+        )
+
+    fig.update_layout(
+        sliders=[
+            dict(
+                active=initial_step,
+                currentvalue=dict(prefix="Reveal: ", font=dict(size=16)),
+                pad=dict(t=40),
+                steps=slider_steps,
+            )
+        ]
+    )
+
+    return fig
+
+# -----------------------------
+# Render (Streamlit Prev/Next + Fullscreen-safe Plotly slider)
+# -----------------------------
+st.subheader("Step-through Reveal")
+
+n_main = len(MAIN_DOMAINS)
+
+if "step" not in st.session_state:
+    st.session_state.step = 0
+
+c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 2])
+
+with c1:
+    if st.button("⟵ Prev", use_container_width=True):
+        st.session_state.step = max(0, st.session_state.step - 1)
+
+with c2:
+    if st.button("Next ⟶", use_container_width=True):
+        st.session_state.step = min(n_main, st.session_state.step + 1)
+
+with c3:
+    if st.button("Reset", use_container_width=True):
+        st.session_state.step = 0
+
+with c4:
+    if st.button("All", use_container_width=True):
+        st.session_state.step = n_main
+
+with c5:
+    st.caption(f"Step: {st.session_state.step} / {n_main}")
+
+# ONE chart element only (no duplicate-id errors). Big height for readability.
+st.plotly_chart(
+    make_client_stepper_fig(st.session_state.step),
+    use_container_width=True,
+    key="stepper_chart",
+    config={"displayModeBar": True},
+)
