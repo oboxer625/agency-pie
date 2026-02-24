@@ -8,9 +8,9 @@ import plotly.graph_objects as go
 # -----------------------------
 # Page setup
 # -----------------------------
-st.set_page_config(page_title="Agency Pie Generator", layout="wide")
-st.title("Agency Framework – Pie-with-Depth Generator")
-st.caption("Local tool. Avoid putting any identifying client information in here.")
+st.set_page_config(page_title="Agency Framework™ Visualizer", layout="wide")
+st.title("Agency Framework™ Visualizer")
+st.caption("Agency Framework™ – Oren Boxer, Ph.D.")
 
 # -----------------------------
 # Inputs
@@ -148,8 +148,10 @@ def clamp_int(x) -> int:
         v = 0
     return max(0, min(MAX_SCORE, v))
 
+
 def normalize_deg(deg: float) -> float:
     return float(deg % 360)
+
 
 def boundary_lines(
     n: int,
@@ -176,10 +178,12 @@ def boundary_lines(
         )
     return lines
 
+
 def main_wedge_geometry(n_main: int):
     w_main = 360 / n_main
     rotation_deg = 90 - (180 / n_main)
     return w_main, rotation_deg
+
 
 def common_layout(n_main: int) -> dict:
     half_slice = 180 / n_main
@@ -210,6 +214,7 @@ def common_layout(n_main: int) -> dict:
         margin=dict(l=160, r=160, t=120, b=160),
     )
 
+
 def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
     w_main, rotation_deg = main_wedge_geometry(n_main)
     centers = [normalize_deg(rotation_deg - (k + 0.5) * w_main) for k in range(n_main)]
@@ -226,6 +231,7 @@ def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
             showlegend=False,
         )
     )
+
 
 def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
     w_main, rotation_deg = main_wedge_geometry(n_main)
@@ -254,6 +260,7 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
             showlegend=False,
         )
     )
+
 
 # -----------------------------
 # Trace builder
@@ -319,6 +326,7 @@ def build_traces(reveal_main_count: int) -> list:
 
     return traces
 
+
 # -----------------------------
 # Client-side Stepper Figure (works in fullscreen modal)
 # -----------------------------
@@ -331,7 +339,7 @@ def make_client_stepper_fig(initial_step: int) -> go.Figure:
     n_main = len(MAIN_DOMAINS)
 
     # Build bar traces for each step
-    per_step_traces: list[list[go.BaseTraceType]] = []
+    per_step_traces: list[list] = []
     for step in range(n_main + 1):
         per_step_traces.append(build_traces(step))
 
@@ -401,6 +409,7 @@ def make_client_stepper_fig(initial_step: int) -> go.Figure:
 
     return fig
 
+
 # -----------------------------
 # Render (Streamlit Prev/Next + Fullscreen-safe Plotly slider)
 # -----------------------------
@@ -435,7 +444,10 @@ with c5:
 # ONE chart element only (no duplicate-id errors). Big height for readability.
 st.plotly_chart(
     make_client_stepper_fig(st.session_state.step),
-    use_container_width=True,
+    width="stretch",
     key="stepper_chart",
     config={"displayModeBar": True},
 )
+
+st.markdown("---")
+st.caption("© Oren Boxer, Ph.D. All rights reserved.")
