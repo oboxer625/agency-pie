@@ -51,29 +51,29 @@ DISPLAY_LABELS = {
     "Coping & Regulation": "Coping &<br>Regulation",
 }
 LABEL_RADIUS_BY_DOMAIN = {
-    "Reasoning": 1.03,
-    "Academics": 1.10,
-    "Attention": 1.08,
-    "Planning": 1.03,
-    "Language": 1.03,
-    "Coordination": 1.07,
-    "Social": 1.10,
-    "Coping & Regulation": 1.02,
+    "Reasoning": 1.24,
+    "Academics": 1.31,
+    "Attention": 1.24,
+    "Planning": 1.23,
+    "Language": 1.23,
+    "Coordination": 1.24,
+    "Social": 1.25,
+    "Coping & Regulation": 1.23,
 }
 LABEL_FONT_SIZE_BY_DOMAIN = {
-    "Reasoning": 16,
+    "Reasoning": 15,
     "Academics": 15,
-    "Attention": 17,
-    "Planning": 17,
-    "Language": 17,
-    "Coordination": 16,
-    "Social": 17,
-    "Coping & Regulation": 15,
+    "Attention": 16,
+    "Planning": 16,
+    "Language": 16,
+    "Coordination": 15,
+    "Social": 16,
+    "Coping & Regulation": 14,
 }
 
 MAX_SCORE = 100
 LABEL_RADIUS_FACTOR = 1.14
-PLOT_MAX = int(MAX_SCORE * 1.24)
+PLOT_MAX = int(MAX_SCORE * 1.50)
 
 # Make the chart physically large (key for parent feedbacks + fullscreen readability)
 CHART_HEIGHT = 880
@@ -324,7 +324,7 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
         thetas.append(theta_center)
         texts.append(f"<b>{sub.upper()}</b>")
 
-    r_sub = MAX_SCORE * 0.95
+    r_sub = MAX_SCORE * 1.07
 
     fig.add_trace(
         go.Scatterpolar(
