@@ -31,12 +31,9 @@ st.markdown(
     [data-testid="stSidebar"] > div {
         overflow-x: hidden !important;
     }
-    /* Plotly fullscreen must sit above every Streamlit navigation layer. */
-    [data-testid="stFullScreenFrame"] {
-        z-index: 2147483647 !important;
-        background: #FAFAF8 !important;
-    }
-    body:has([data-testid="stFullScreenFrame"]) [data-testid="stSidebar"] {
+    /* Streamlit's element-fullscreen wrapper can duplicate sidebar text while
+       compositing Plotly. Disable that control; browser fullscreen still works. */
+    button[aria-label="Fullscreen"] {
         display: none !important;
     }
     </style>
@@ -519,7 +516,7 @@ with c5:
 st.plotly_chart(
     make_client_stepper_fig(st.session_state.step),
     width="stretch",
-    key="agency_profile_chart_v3",
+    key="agency_profile_chart_v5",
     config={
         "displayModeBar": True,
         "displaylogo": False,
