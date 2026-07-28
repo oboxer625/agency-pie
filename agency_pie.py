@@ -246,7 +246,9 @@ def common_layout(n_main: int) -> dict:
         template="plotly_white",
         showlegend=False,
         height=CHART_HEIGHT,
-        paper_bgcolor="rgba(0,0,0,0)",
+        # An opaque canvas prevents sidebar controls from showing through
+        # Plotly's fullscreen overlay.
+        paper_bgcolor="#FAFAF8",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif"),
         polar=dict(
