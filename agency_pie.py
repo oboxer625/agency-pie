@@ -18,7 +18,7 @@ st.caption("Agency Framework™ – Oren Boxer, Ph.D.")
 INPUT_DOMAINS = [
     "Reasoning", "Reading", "Math", "Writing",
     "Attention", "Planning", "Language",
-    "Coordination", "Connection", "Flexibility"
+    "Coordination", "Social", "Coping & Regulation"
 ]
 
 MAIN_DOMAINS = [
@@ -28,12 +28,15 @@ MAIN_DOMAINS = [
     "Planning",
     "Language",
     "Coordination",
-    "Connection",
-    "Flexibility",
+    "Social",
+    "Coping & Regulation",
 ]
 
 ACADEMIC_SUBS = ["Math", "Writing", "Reading"]
 ACADEMIC_SUB_ABBR = {"Math": "M", "Writing": "W", "Reading": "R"}
+DISPLAY_LABELS = {
+    "Coping & Regulation": "Coping &<br>Regulation",
+}
 
 MAX_SCORE = 100
 LABEL_RADIUS_FACTOR = 1.10
@@ -55,8 +58,8 @@ THEMES = {
         "Planning": "#72B7B2",
         "Language": "#FF9DA6",
         "Coordination": "#9D755D",
-        "Connection": "#BAB0AC",
-        "Flexibility": "#59A14F",
+        "Social": "#BAB0AC",
+        "Coping & Regulation": "#59A14F",
         "Academics": "#F58518",
     },
     "Muted Clinical": {
@@ -68,8 +71,8 @@ THEMES = {
         "Planning": "#5F9EA0",
         "Language": "#E8A0A8",
         "Coordination": "#8D6E63",
-        "Connection": "#9E9E9E",
-        "Flexibility": "#7DA453",
+        "Social": "#9E9E9E",
+        "Coping & Regulation": "#7DA453",
         "Academics": "#D8A47F",
     },
     "High Contrast": {
@@ -81,8 +84,8 @@ THEMES = {
         "Planning": "#17BECF",
         "Language": "#FF69B4",
         "Coordination": "#8C564B",
-        "Connection": "#7F7F7F",
-        "Flexibility": "#32CD32",
+        "Social": "#7F7F7F",
+        "Coping & Regulation": "#32CD32",
         "Academics": "#FF7F0E",
     },
 }
@@ -107,7 +110,7 @@ else:
     sample = (
         "domain,value\n"
         "Reasoning,100\nReading,60\nMath,100\nWriting,90\nAttention,25\nPlanning,25\n"
-        "Language,100\nCoordination,100\nConnection,100\nFlexibility,50\n"
+        "Language,100\nCoordination,100\nSocial,100\nCoping & Regulation,50\n"
     )
     text = st.sidebar.text_area("Paste data", value=sample, height=220)
 
@@ -354,7 +357,7 @@ def make_client_stepper_fig(initial_step: int) -> go.Figure:
     fig.update_layout(**common_layout(n_main))
 
     # Add labels ONCE at the end (always visible)
-    add_labels(fig, MAIN_DOMAINS, n_main)
+    add_labels(fig, [DISPLAY_LABELS.get(name, name) for name in MAIN_DOMAINS], n_main)
     add_academics_sub_labels(fig, n_main)
 
     total_bar_traces = len(flat_bars)
@@ -384,7 +387,7 @@ def make_client_stepper_fig(initial_step: int) -> go.Figure:
         fig.data[i].visible = v
 
     # Slider labels
-    step_labels = ["Start"] + MAIN_DOMAINS[:]
+    step_labels = ["Start"] + [DISPLAY_LABELS.get(name, name) for name in MAIN_DOMAINS]
 
     slider_steps = []
     for step in range(n_main + 1):
