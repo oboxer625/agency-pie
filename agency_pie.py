@@ -51,14 +51,24 @@ DISPLAY_LABELS = {
     "Coping & Regulation": "Coping &<br>Regulation",
 }
 LABEL_RADIUS_BY_DOMAIN = {
-    "Reasoning": 1.00,
-    "Academics": 1.07,
+    "Reasoning": 1.03,
+    "Academics": 1.10,
     "Attention": 1.08,
-    "Planning": 1.02,
-    "Language": 1.02,
-    "Coordination": 1.05,
-    "Social": 1.09,
-    "Coping & Regulation": 0.98,
+    "Planning": 1.03,
+    "Language": 1.03,
+    "Coordination": 1.07,
+    "Social": 1.10,
+    "Coping & Regulation": 1.02,
+}
+LABEL_FONT_SIZE_BY_DOMAIN = {
+    "Reasoning": 16,
+    "Academics": 15,
+    "Attention": 17,
+    "Planning": 17,
+    "Language": 17,
+    "Coordination": 16,
+    "Social": 17,
+    "Coping & Regulation": 15,
 }
 
 MAX_SCORE = 100
@@ -277,6 +287,10 @@ def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
         for i in range(n_main)
     ]
     styled_labels = [f"<b>{label}</b>" for label in labels]
+    label_sizes = [
+        LABEL_FONT_SIZE_BY_DOMAIN.get(MAIN_DOMAINS[i], 17)
+        for i in range(n_main)
+    ]
 
     fig.add_trace(
         go.Scatterpolar(
@@ -286,8 +300,9 @@ def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
             text=styled_labels,
             textfont=dict(
                 family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif",
-                size=17,
+                size=label_sizes,
                 color="#2E4055",
+                shadow="0 0 4px #FAFAF8, 0 0 8px #FAFAF8",
             ),
             hoverinfo="skip",
             showlegend=False,
@@ -309,7 +324,7 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
         thetas.append(theta_center)
         texts.append(f"<b>{sub.upper()}</b>")
 
-    r_sub = MAX_SCORE * 1.035
+    r_sub = MAX_SCORE * 0.95
 
     fig.add_trace(
         go.Scatterpolar(
@@ -321,6 +336,7 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
                 family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif",
                 size=10,
                 color="#5D523A",
+                shadow="0 0 3px #FAFAF8, 0 0 6px #FAFAF8",
             ),
             hoverinfo="skip",
             showlegend=False,
