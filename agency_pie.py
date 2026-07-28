@@ -221,6 +221,7 @@ def common_layout(n_main: int) -> dict:
     return dict(
         template="plotly_white",
         showlegend=False,
+        barmode="overlay",
         height=CHART_HEIGHT,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
