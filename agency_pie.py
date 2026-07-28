@@ -255,8 +255,7 @@ def common_layout(n_main: int) -> dict:
                 tickvals=[25, 50, 75, 100],
                 gridcolor="rgba(48,76,109,0.10)",
                 gridwidth=1,
-                linecolor="#DDBB62",
-                linewidth=2,
+                showline=False,
             ),
             angularaxis=dict(
                 rotation=rotation_deg,
@@ -270,6 +269,7 @@ def common_layout(n_main: int) -> dict:
         xaxis=dict(visible=False, range=[-PLOT_MAX, PLOT_MAX]),
         yaxis=dict(visible=False, range=[-PLOT_MAX, PLOT_MAX], scaleanchor="x", scaleratio=1),
         shapes=[],
+        sliders=[],
         margin=dict(l=145, r=145, t=125, b=145),
         hoverlabel=dict(
             bgcolor="#FFFFFF",
@@ -464,7 +464,7 @@ def make_client_stepper_fig(initial_step: int) -> go.Figure:
 
 
 # -----------------------------
-# Render (Streamlit Prev/Next + Fullscreen-safe Plotly slider)
+# Render (Streamlit controls)
 # -----------------------------
 st.subheader("Agency Profile")
 
