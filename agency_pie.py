@@ -50,6 +50,16 @@ ACADEMIC_SUB_ABBR = {"Math": "M", "Writing": "W", "Reading": "R"}
 DISPLAY_LABELS = {
     "Coping & Regulation": "Coping &<br>Regulation",
 }
+LABEL_RADIUS_BY_DOMAIN = {
+    "Reasoning": 1.03,
+    "Academics": 1.10,
+    "Attention": 1.08,
+    "Planning": 1.02,
+    "Language": 1.02,
+    "Coordination": 1.08,
+    "Social": 1.09,
+    "Coping & Regulation": 1.02,
+}
 
 MAX_SCORE = 100
 LABEL_RADIUS_FACTOR = 1.14
@@ -263,7 +273,7 @@ def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
     w_main, rotation_deg = main_wedge_geometry(n_main)
     centers = [normalize_deg(rotation_deg - (k + 0.5) * w_main) for k in range(n_main)]
     r_labels = [
-        MAX_SCORE * (1.20 if MAIN_DOMAINS[i] == "Academics" else LABEL_RADIUS_FACTOR)
+        MAX_SCORE * LABEL_RADIUS_BY_DOMAIN.get(MAIN_DOMAINS[i], LABEL_RADIUS_FACTOR)
         for i in range(n_main)
     ]
     styled_labels = [f"<b>{label}</b>" for label in labels]
