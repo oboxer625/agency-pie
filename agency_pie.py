@@ -221,12 +221,12 @@ def common_layout(n_main: int) -> dict:
     return dict(
         template="plotly_white",
         showlegend=False,
-        barmode="overlay",
         height=CHART_HEIGHT,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif"),
         polar=dict(
+            barmode="overlay",
             bgcolor="rgba(0,0,0,0)",
             radialaxis=dict(
                 range=[0, PLOT_MAX],
