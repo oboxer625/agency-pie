@@ -55,10 +55,10 @@ LABEL_RADIUS_BY_DOMAIN = {
     "Academics": 1.31,
     "Attention": 1.24,
     "Planning": 1.23,
-    "Language": 1.23,
+    "Language": 1.24,
     "Coordination": 1.24,
     "Social": 1.25,
-    "Coping & Regulation": 1.23,
+    "Coping & Regulation": 1.25,
 }
 LABEL_FONT_SIZE_BY_DOMAIN = {
     "Reasoning": 15,
@@ -324,7 +324,7 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
         thetas.append(theta_center)
         texts.append(f"<b>{sub.upper()}</b>")
 
-    r_sub = MAX_SCORE * 1.07
+    r_sub = MAX_SCORE * 1.09
 
     fig.add_trace(
         go.Scatterpolar(
