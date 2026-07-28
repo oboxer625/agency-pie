@@ -451,85 +451,15 @@ def build_traces(reveal_main_count: int) -> list:
 
 
 # -----------------------------
-# Client-side Stepper Figure (works in fullscreen modal)
+# Stepper Figure
 # -----------------------------
 def make_client_stepper_fig(initial_step: int) -> go.Figure:
-    """
-    Builds ALL steps as separate groups of traces, then uses a Plotly slider
-    (method='update') to toggle which group's traces are visible.
-    This works reliably in Streamlit's fullscreen chart modal.
-    """
     n_main = len(MAIN_DOMAINS)
-
-    # Build bar traces for each step
-    per_step_traces: list[list] = []
-    for step in range(n_main + 1):
-        per_step_traces.append(build_traces(step))
-
-    # Flatten bar traces
-    flat_bars = []
-    step_sizes = []
-    for traces in per_step_traces:
-        step_sizes.append(len(traces))
-        flat_bars.extend(traces)
-
-    fig = go.Figure(data=flat_bars)
+    initial_step = max(0, min(n_main, int(initial_step)))
+    fig = go.Figure(data=build_traces(initial_step))
     fig.update_layout(**common_layout(n_main))
-
-    # Add labels ONCE at the end (always visible)
     add_labels(fig, [DISPLAY_LABELS.get(name, name) for name in MAIN_DOMAINS], n_main)
     add_academics_sub_labels(fig, n_main)
-
-    total_bar_traces = len(flat_bars)
-    label_trace_count = 2  # we add two Scatterpolar traces above
-
-    # Precompute start indices for each step
-    starts = []
-    idx = 0
-    for sz in step_sizes:
-        starts.append(idx)
-        idx += sz
-
-    def visibility_for(step: int) -> list[bool]:
-        vis = [False] * total_bar_traces
-        start = starts[step]
-        end = start + step_sizes[step]
-        for i in range(start, end):
-            vis[i] = True
-        # labels always visible (last two traces)
-        vis += [True] * label_trace_count
-        return vis
-
-    # Apply initial visibility
-    initial_step = max(0, min(n_main, int(initial_step)))
-    vis0 = visibility_for(initial_step)
-    for i, v in enumerate(vis0):
-        fig.data[i].visible = v
-
-    # Slider labels
-    step_labels = ["Start"] + [DISPLAY_LABELS.get(name, name) for name in MAIN_DOMAINS]
-
-    slider_steps = []
-    for step in range(n_main + 1):
-        slider_steps.append(
-            dict(
-                method="update",
-                args=[{"visible": visibility_for(step)}],
-                label=step_labels[step],
-            )
-        )
-
-    fig.update_layout(
-        sliders=[
-            dict(
-                active=initial_step,
-                currentvalue=dict(prefix="Reveal: ", font=dict(size=16)),
-                pad=dict(t=40),
-                steps=slider_steps,
-            )
-        ]
-    )
-
     return fig
 
 
