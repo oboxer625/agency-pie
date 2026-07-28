@@ -20,6 +20,10 @@ st.markdown(
     [data-testid="stMetric"], [data-testid="stDataFrame"] {
         border-radius: 10px;
     }
+    /* Never show legacy Plotly slider remnants from earlier chart versions. */
+    g.slider-container {
+        display: none !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -498,7 +502,7 @@ with c5:
 st.plotly_chart(
     make_client_stepper_fig(st.session_state.step),
     width="stretch",
-    key="stepper_chart",
+    key="agency_profile_chart_v3",
     config={
         "displayModeBar": True,
         "displaylogo": False,
