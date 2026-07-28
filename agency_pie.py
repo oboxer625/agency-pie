@@ -24,6 +24,21 @@ st.markdown(
     g.slider-container {
         display: none !important;
     }
+    /* Keep collapsed sidebar controls from leaking into the chart area. */
+    [data-testid="stSidebar"] {
+        overflow: hidden !important;
+    }
+    [data-testid="stSidebar"] > div {
+        overflow-x: hidden !important;
+    }
+    /* Plotly fullscreen must sit above every Streamlit navigation layer. */
+    [data-testid="stFullScreenFrame"] {
+        z-index: 2147483647 !important;
+        background: #FAFAF8 !important;
+    }
+    body:has([data-testid="stFullScreenFrame"]) [data-testid="stSidebar"] {
+        display: none !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
