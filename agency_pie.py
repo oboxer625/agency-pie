@@ -51,14 +51,14 @@ DISPLAY_LABELS = {
     "Coping & Regulation": "Coping &<br>Regulation",
 }
 LABEL_RADIUS_BY_DOMAIN = {
-    "Reasoning": 1.03,
-    "Academics": 1.10,
+    "Reasoning": 1.00,
+    "Academics": 1.07,
     "Attention": 1.08,
     "Planning": 1.02,
     "Language": 1.02,
-    "Coordination": 1.08,
+    "Coordination": 1.05,
     "Social": 1.09,
-    "Coping & Regulation": 1.02,
+    "Coping & Regulation": 0.98,
 }
 
 MAX_SCORE = 100
