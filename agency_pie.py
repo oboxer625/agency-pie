@@ -11,6 +11,19 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Agency Framework™ Visualizer", layout="wide")
 st.title("Agency Framework™ Visualizer")
 st.caption("Agency Framework™ – Oren Boxer, Ph.D.")
+st.markdown(
+    """
+    <style>
+    .stApp { background: #FAFAF8; }
+    h1, h2, h3 { color: #2E4055; letter-spacing: -0.02em; }
+    [data-testid="stSidebar"] { background: #F3F0E9; }
+    [data-testid="stMetric"], [data-testid="stDataFrame"] {
+        border-radius: 10px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # -----------------------------
 # Inputs
@@ -39,16 +52,29 @@ DISPLAY_LABELS = {
 }
 
 MAX_SCORE = 100
-LABEL_RADIUS_FACTOR = 1.10
-PLOT_MAX = int(MAX_SCORE * 1.18)
+LABEL_RADIUS_FACTOR = 1.14
+PLOT_MAX = int(MAX_SCORE * 1.24)
 
 # Make the chart physically large (key for parent feedbacks + fullscreen readability)
-CHART_HEIGHT = 900
+CHART_HEIGHT = 880
 
 # -----------------------------
 # Color themes
 # -----------------------------
 THEMES = {
+    "Agency Signature": {
+        "Reasoning": "#304C6D",
+        "Reading": "#D9A73E",
+        "Math": "#E8BF63",
+        "Writing": "#C98F38",
+        "Attention": "#D16A5B",
+        "Planning": "#6EA7A4",
+        "Language": "#C98591",
+        "Coordination": "#A97358",
+        "Social": "#7D9B73",
+        "Coping & Regulation": "#806A8F",
+        "Academics": "#D9A73E",
+    },
     "Original": {
         "Reasoning": "#4C78A8",
         "Reading": "#F58518",
@@ -138,8 +164,8 @@ else:
 df_input = pd.DataFrame({"domain": INPUT_DOMAINS, "value": values})
 lookup = dict(zip(df_input["domain"], df_input["value"]))
 
-st.subheader("Preview data")
-st.dataframe(df_input, width="stretch")
+with st.expander("Review entered values"):
+    st.dataframe(df_input, width="stretch", hide_index=True)
 
 # -----------------------------
 # Helpers
@@ -196,40 +222,62 @@ def common_layout(n_main: int) -> dict:
         template="plotly_white",
         showlegend=False,
         height=CHART_HEIGHT,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif"),
         polar=dict(
+            bgcolor="rgba(0,0,0,0)",
             radialaxis=dict(
                 range=[0, PLOT_MAX],
                 showticklabels=False,
                 ticks="",
-                gridcolor="rgba(0,0,0,0.08)",
+                tickvals=[25, 50, 75, 100],
+                gridcolor="rgba(48,76,109,0.10)",
+                gridwidth=1,
+                linecolor="#DDBB62",
+                linewidth=2,
             ),
             angularaxis=dict(
                 rotation=rotation_deg,
                 direction="clockwise",
                 showgrid=False,
                 showticklabels=False,
+                linecolor="#DDBB62",
+                linewidth=2,
             ),
         ),
         xaxis=dict(visible=False, range=[-PLOT_MAX, PLOT_MAX]),
         yaxis=dict(visible=False, range=[-PLOT_MAX, PLOT_MAX], scaleanchor="x", scaleratio=1),
-        shapes=boundary_lines(n_main, rotation_deg=rotation_deg, max_r=MAX_SCORE),
-        # generous margins so labels never get clipped
-        margin=dict(l=160, r=160, t=120, b=160),
+        shapes=[],
+        margin=dict(l=145, r=145, t=125, b=145),
+        hoverlabel=dict(
+            bgcolor="#FFFFFF",
+            bordercolor="#D7C382",
+            font=dict(color="#24384D", size=14),
+        ),
     )
 
 
 def add_labels(fig: go.Figure, labels: list[str], n_main: int) -> None:
     w_main, rotation_deg = main_wedge_geometry(n_main)
     centers = [normalize_deg(rotation_deg - (k + 0.5) * w_main) for k in range(n_main)]
-    r_label = MAX_SCORE * LABEL_RADIUS_FACTOR
+    r_labels = [
+        MAX_SCORE * (1.20 if MAIN_DOMAINS[i] == "Academics" else LABEL_RADIUS_FACTOR)
+        for i in range(n_main)
+    ]
+    styled_labels = [f"<b>{label}</b>" for label in labels]
 
     fig.add_trace(
         go.Scatterpolar(
-            r=[r_label] * n_main,
+            r=r_labels,
             theta=centers,
             mode="text",
-            text=labels,
-            textfont=dict(size=20, color="rgba(70,70,90,0.92)"),
+            text=styled_labels,
+            textfont=dict(
+                family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif",
+                size=17,
+                color="#2E4055",
+            ),
             hoverinfo="skip",
             showlegend=False,
         )
@@ -248,9 +296,9 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
     for j, sub in enumerate(ACADEMIC_SUBS):
         theta_center = normalize_deg(acad_edge_start - (j + 0.5) * w_mini)
         thetas.append(theta_center)
-        texts.append(ACADEMIC_SUB_ABBR.get(sub, sub[:1].upper()))
+        texts.append(f"<b>{sub.upper()}</b>")
 
-    r_sub = min(MAX_SCORE * 1.04, PLOT_MAX * 0.98)
+    r_sub = MAX_SCORE * 1.035
 
     fig.add_trace(
         go.Scatterpolar(
@@ -258,7 +306,11 @@ def add_academics_sub_labels(fig: go.Figure, n_main: int) -> None:
             theta=thetas,
             mode="text",
             text=texts,
-            textfont=dict(size=18, color="rgba(50,50,60,0.90)"),
+            textfont=dict(
+                family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif",
+                size=10,
+                color="#5D523A",
+            ),
             hoverinfo="skip",
             showlegend=False,
         )
@@ -280,6 +332,45 @@ def build_traces(reveal_main_count: int) -> list:
 
     traces = []
 
+    # A complete, lightly tinted wheel remains visible behind the scores.
+    # It represents the full set of capacities that can be strengthened.
+    for k, name in enumerate(MAIN_DOMAINS):
+        if name == "Academics":
+            continue
+        theta_center = normalize_deg(rotation_deg - (k + 0.5) * w_main)
+        traces.append(
+            go.Barpolar(
+                r=[MAX_SCORE],
+                theta=[theta_center],
+                width=[w_main * 0.985],
+                marker=dict(
+                    color=COLOR_MAP.get(name, "#60758C"),
+                    line=dict(color="#E1C46F", width=1.4),
+                ),
+                opacity=0.12,
+                hoverinfo="skip",
+            )
+        )
+
+    acad_k = MAIN_DOMAINS.index("Academics")
+    acad_edge_start = rotation_deg - acad_k * w_main
+    w_mini = w_main / 3
+    for j, sub in enumerate(ACADEMIC_SUBS):
+        theta_center = normalize_deg(acad_edge_start - (j + 0.5) * w_mini)
+        traces.append(
+            go.Barpolar(
+                r=[MAX_SCORE],
+                theta=[theta_center],
+                width=[w_mini * 0.96],
+                marker=dict(
+                    color=COLOR_MAP.get(sub, "#D9A73E"),
+                    line=dict(color="#E1C46F", width=1.2),
+                ),
+                opacity=0.13,
+                hoverinfo="skip",
+            )
+        )
+
     # regular main wedges
     for k, name in enumerate(MAIN_DOMAINS):
         if name == "Academics":
@@ -295,19 +386,18 @@ def build_traces(reveal_main_count: int) -> list:
             go.Barpolar(
                 r=[val],
                 theta=[theta_center],
-                width=[w_main * 0.98],
-                marker=dict(color=COLOR_MAP.get(name, "#4C78A8"), line=dict(color="white", width=1)),
-                opacity=0.95,
+                width=[w_main * 0.94],
+                marker=dict(
+                    color=COLOR_MAP.get(name, "#4C78A8"),
+                    line=dict(color="rgba(255,255,255,0.92)", width=1.6),
+                ),
+                opacity=0.94,
                 hovertemplate=f"{name}: {val}<extra></extra>",
             )
         )
 
     # Academics: subdivided inside ONE main wedge
-    acad_k = MAIN_DOMAINS.index("Academics")
     acad_revealed = acad_k in revealed
-
-    acad_edge_start = rotation_deg - acad_k * w_main
-    w_mini = w_main / 3
 
     for j, sub in enumerate(ACADEMIC_SUBS):
         val = clamp_int(lookup.get(sub, 0))
@@ -320,9 +410,12 @@ def build_traces(reveal_main_count: int) -> list:
             go.Barpolar(
                 r=[val],
                 theta=[theta_center],
-                width=[w_mini * 0.95],
-                marker=dict(color=COLOR_MAP.get(sub, "#999999"), line=dict(color="white", width=1)),
-                opacity=0.95,
+                width=[w_mini * 0.90],
+                marker=dict(
+                    color=COLOR_MAP.get(sub, "#999999"),
+                    line=dict(color="rgba(255,255,255,0.94)", width=1.4),
+                ),
+                opacity=0.94,
                 hovertemplate=f"Academics – {sub}: {val}<extra></extra>",
             )
         )
@@ -416,12 +509,12 @@ def make_client_stepper_fig(initial_step: int) -> go.Figure:
 # -----------------------------
 # Render (Streamlit Prev/Next + Fullscreen-safe Plotly slider)
 # -----------------------------
-st.subheader("Step-through Reveal")
+st.subheader("Agency Profile")
 
 n_main = len(MAIN_DOMAINS)
 
 if "step" not in st.session_state:
-    st.session_state.step = 0
+    st.session_state.step = n_main
 
 c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 2])
 
@@ -449,8 +542,23 @@ st.plotly_chart(
     make_client_stepper_fig(st.session_state.step),
     width="stretch",
     key="stepper_chart",
-    config={"displayModeBar": True},
+    config={
+        "displayModeBar": True,
+        "displaylogo": False,
+        "toImageButtonOptions": {
+            "format": "png",
+            "filename": "agency-framework-profile",
+            "height": 1400,
+            "width": 1400,
+            "scale": 2,
+        },
+    },
 )
 
+st.caption(
+    "The complete outline represents the full set of capacities that can support "
+    "agency. The colored areas reflect the capacities currently available to the child; "
+    "areas with more room to grow help guide focused recommendations and support."
+)
 st.markdown("---")
 st.caption("© Oren Boxer, Ph.D. All rights reserved.")
